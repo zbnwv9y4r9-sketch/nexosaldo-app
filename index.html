@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="NexoSaldo: gestión financiera por evento para emprendedores.">
 <meta name="theme-color" content="#103C32">
-<meta name="nexosaldo-version" content="20261026.2002">
+<meta name="nexosaldo-version" content="20261026.2120">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -79,6 +79,7 @@ h1{font-size:1.45rem;font-weight:700} h2{font-size:1.08rem;font-weight:600} h3{f
 :root[data-theme="dark"] .btn.pri{background:var(--lime);border-color:var(--lime);color:#0B2621}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn.pri{background:var(--lime);border-color:var(--lime);color:#0B2621}}
 .btn.danger{color:var(--bad)} .btn.sm{padding:4px 9px;min-height:30px;font-size:.82rem} .btn.ghost{border-color:transparent;background:transparent}
+.btn svg{width:18px;height:18px;flex:none}
 .btn[disabled]{opacity:.45;cursor:not-allowed}
 .card{background:var(--surface);border:1px solid var(--rule);border-radius:var(--r);padding:16px;min-width:0}
 .card > h2,.card > h3{margin-bottom:10px}
@@ -208,9 +209,9 @@ input.bad{border-color:var(--bad)}
 <body>
 <div id="app"></div><div id="modal" hidden></div>
 <script src="config.js"></script>
-<script src="host.js?v=20261026.2002"></script>
+<script src="host.js?v=20261026.2120"></script>
 <script>
-const APP_VERSION = "20261026.2002";
+const APP_VERSION = "20261026.2120";
 /* NexoSaldo — capa financiera (navegador). Paridad con nexosaldo/finance (Python).
  * Importes en CENTAVOS enteros; porcentajes en PUNTOS BÁSICOS (1 % = 100 bp);
  * cantidades en MILÉSIMAS (1 unidad = 1000). Divisiones exactas con BigInt y
@@ -910,7 +911,13 @@ function shell(content) {
 }
 ACT.nav = (el) => go(el.dataset.v);
 ACT.more = () => openModal(`<div class="spread"><h2>Secciones</h2><button class="btn ghost" data-act="close">Cerrar</button></div>
-  <div class="grid g2" style="grid-template-columns:1fr 1fr">${NAV.map(([k, l]) => `<button class="btn" data-act="nav" data-v="${k}" style="justify-content:flex-start">${icon(k)}${l}</button>`).join("")}</div>`);
+  <div class="grid g2" style="grid-template-columns:1fr 1fr">${NAV.map(([k, l]) => `<button class="btn" data-act="nav" data-v="${k}" style="justify-content:flex-start">${icon(k)}${l}</button>`).join("")}</div>
+  <div class="spread small muted" style="border-top:1px solid var(--rule);padding-top:12px"><span>Versión de la app: <b>${esc(typeof APP_VERSION !== "undefined" ? APP_VERSION : "—")}</b></span>
+    ${window.NEXOSALDO_HOST && window.NEXOSALDO_HOST.checkUpdate ? '<button class="btn sm" data-act="check-update">Buscar actualización</button>' : ""}</div>`);
+ACT["check-update"] = async (el) => { el.disabled = true; el.textContent = "Buscando…"; const r = await window.NEXOSALDO_HOST.checkUpdate();
+  if (r === "nueva") { closeModal(); toast("Hay una versión nueva: pulsa «Actualizar» abajo."); }
+  else if (r === "igual") { el.textContent = "Ya tienes la última versión"; }
+  else { el.disabled = false; el.textContent = "Sin conexión. Reintentar"; } };
 ACT.close = closeModal;
 ACT["modal-back"] = (el, ev) => { if (ev.target === el) closeModal(); };
 ACT["confirm-ok"] = async () => { const cb = confirmCb; confirmCb = null; const flags = {}; document.querySelectorAll("#modal [data-flag]").forEach((x) => (flags[x.dataset.flag] = x.checked)); closeModal(); if (cb) await cb(flags); };
