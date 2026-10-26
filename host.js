@@ -6,7 +6,7 @@
 (() => {
   const CFG = window.NEXOSALDO_CONFIG || {};
   const USE_SB = !!(CFG.supabaseUrl && CFG.supabaseAnonKey);
-  const MIME = { pdf: "application/pdf", csv: "text/csv;charset=utf-8", json: "application/json" };
+  const MIME = { pdf: "application/pdf", csv: "text/csv;charset=utf-8", json: "application/json", ics: "text/calendar;charset=utf-8" };
   const coarse = window.matchMedia && matchMedia("(pointer: coarse)").matches;
   const err = (code, message) => Object.assign(new Error(message), { code });
 
@@ -32,7 +32,7 @@
       const ext = filename.split(".").pop().toLowerCase();
       const blob = data instanceof Blob ? data : new Blob([data], { type: MIME[ext] || "application/octet-stream" });
       const file = new File([blob], filename, { type: blob.type });
-      if (coarse && navigator.canShare && navigator.canShare({ files: [file] })) {
+      if (ext !== "ics" && coarse && navigator.canShare && navigator.canShare({ files: [file] })) {
         try { await navigator.share({ files: [file], title: filename }); return { status: "saved" }; }
         catch (x) { if (x && x.name === "AbortError") throw err("declined", "Cancelado"); return shareSheetFallback(file); }
       }
