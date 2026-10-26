@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="NexoSaldo: gestión financiera por evento para emprendedores.">
 <meta name="theme-color" content="#103C32">
-<meta name="nexosaldo-version" content="20261026.2120">
+<meta name="nexosaldo-version" content="20261026.2211">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -209,9 +209,9 @@ input.bad{border-color:var(--bad)}
 <body>
 <div id="app"></div><div id="modal" hidden></div>
 <script src="config.js"></script>
-<script src="host.js?v=20261026.2120"></script>
+<script src="host.js?v=20261026.2211"></script>
 <script>
-const APP_VERSION = "20261026.2120";
+const APP_VERSION = "20261026.2211";
 /* NexoSaldo — capa financiera (navegador). Paridad con nexosaldo/finance (Python).
  * Importes en CENTAVOS enteros; porcentajes en PUNTOS BÁSICOS (1 % = 100 bp);
  * cantidades en MILÉSIMAS (1 unidad = 1000). Divisiones exactas con BigInt y
@@ -763,6 +763,23 @@ function dueItems() {
 }
 const dueAlerts = () => dueItems().filter((x) => x.status === "vencida" || x.status === "por_vencer");
 const quotedFor = (eid) => { const e = evQuoteEstimate(eid); return e ? e.s : null; };
+
+/* ===================================================== reparto entre accionistas */
+// Reparte una ganancia según los porcentajes vigentes hoy. Ganancia negativa → nada que repartir.
+function shareSplit(amountC) {
+  const hs = F.effectiveHolders(all("shareholders"), todayISO()); if (!hs.length) return { none: true, lines: [] };
+  const tot = F.sum(hs, (h) => h.bp);
+  if (tot !== 10000) return { error: `Las participaciones suman ${F.bpToInput(tot)} %; deben sumar 100 %.`, lines: [] };
+  return F.proposeDistribution(Math.max(amountC, 0), hs, todayISO());
+}
+// Trabajos cotizados vigentes (no rechazados, vencidos ni cancelados) con su ganancia.
+function quotedJobs() {
+  return all("quotes").map((q) => { const v = acceptedVer(q) || curVer(q); if (!v || ["rechazada", "vencida", "cancelada"].includes(v.status)) return null;
+    const s = F.computeQuote(v); const sale = all("sales").find((x) => x.quoteId === q.id && !x.voided);
+    const ev = q.eventId && S.events[q.eventId]; const real = sale && ev ? evFacts(ev) : null;
+    return { q, v, s, gainC: real && real.revenue ? real.profit : s.profitC, isReal: !!(real && real.revenue), ev }; })
+    .filter(Boolean).sort((a, b) => (b.v.issuedOn || "").localeCompare(a.v.issuedOn || ""));
+}
 /* ===================================================== interfaz común */
 const ICONS = {
   dashboard: '<path d="M3 13h8V3H3zM13 21h8V11h-8zM3 21h8v-6H3zM13 3v6h8V3z"/>',
@@ -1436,6 +1453,8 @@ function quoteTotals(v, s) {
     ${s.taxC ? `<div><span>Total con impuestos</span><b>${M(s.totalC)}</b></div>` : ""}
     <div class="hl"><span>Tu ganancia</span><b class="${s.profitC < 0 ? "neg" : ""}">${M(s.profitC)}</b><small>${F.fmtPct(s.marginBp, "—")} de la venta</small></div>
     ${target ? `<div><span>Presupuesto del cliente</span><b>${M(target)}</b><small class="${gap < 0 ? "neg" : ""}">${gap === 0 ? "Cuadra exacto" : gap > 0 ? `Faltan ${M(gap)} para llegar` : `Te pasas por ${M(-gap)}`}</small></div>` : ""}</div>
+    ${(() => { const sp = shareSplit(s.profitC); if (sp.none) return ""; if (sp.error) return `<p class="small muted" style="margin-top:8px">Reparto entre accionistas: ${esc(sp.error)}</p>`;
+      return `<div class="small" style="margin-top:10px"><b>Reparto de tu ganancia:</b> ${sp.lines.map((l) => `${esc(l.name)} (${F.bpToInput(l.bp)} %) <b>${M(l.amountC)}</b>`).join(" · ")}</div>`; })()}
     ${s.discountC ? `<p class="small muted">Incluye un descuento de ${M(s.discountC)}.</p>` : ""}
     ${s.errors.length ? `<div class="banner err" style="margin-top:8px">${s.errors.map(esc).join("<br>")}</div>` : ""}
     ${s.lines.some((l) => !l.error && l.profitC < 0) ? `<div class="banner err" style="margin-top:8px">Hay partidas con precio al cliente menor que el precio real.</div>` : ""}`;
@@ -1769,6 +1788,7 @@ VIEWS.shareholders = () => {
     <td class="n">${M(F.sum(all("distributions").filter((d) => d.status === "aprobada"), (d) => F.sum(d.lines.filter((l) => l.shId === h.id), (l) => F.sum(l.payments || [], (p) => p.amountC))))}</td>
     <td><button class="btn sm" data-act="edit-holder" data-id="${h.id}">Editar</button></td></tr>`).join("")}</tbody></table></div>`
     : `<div class="card empty"><b>Sin accionistas</b><p>Registra a cada socio con su porcentaje; deben sumar 100 %.</p></div>`}
+  ${jobsSplitCard()}
   <div class="card"><h2>Calcular distribución</h2><div class="bar"><label class="small" for="d-from">Desde</label><input type="date" id="d-from" value="${from}" data-chg="dist" style="width:auto">
     <label class="small" for="d-to">Hasta</label><input type="date" id="d-to" value="${to}" data-chg="dist" style="width:auto"></div>
     <form class="f" id="dist-form" data-from="${from}" data-to="${to}" style="margin-top:12px">
@@ -1963,6 +1983,23 @@ CHG["backup-import"] = (el) => { const f = el.files[0]; if (!f) return; const r 
     confirmBox("Restaurar respaldo", `<p>Se escribirán <b>${items.length}</b> registros del respaldo del ${esc((b.exportedAt || "").slice(0, 10))}. Los registros con el mismo identificador se reemplazan.</p>`, "Restaurar", async () => {
       let n = 0; for (const [c, id, body] of items) { await save(c, { id, ...body }); n++; } toast(`${n} registros restaurados.`); }); };
   r.readAsText(f); el.value = ""; };
+
+function jobsSplitCard() {
+  const hs = F.effectiveHolders(all("shareholders"), todayISO()); const jobs = quotedJobs();
+  if (!hs.length) return "";
+  const head = `<div class="spread"><h2>Reparto por trabajo cotizado</h2><span class="small muted">Lo que le tocaría a cada accionista de la ganancia de cada trabajo</span></div>`;
+  const chk = shareSplit(0); if (chk.error) return `<div class="card">${head}<div class="banner err">${esc(chk.error)} Ajusta los porcentajes para ver el reparto.</div></div>`;
+  if (!jobs.length) return `<div class="card">${head}<p class="muted small">Todavía no hay cotizaciones. Cuando cotices un trabajo verás aquí cuánto le toca a cada accionista.</p></div>`;
+  const rows = jobs.map((j) => ({ j, sp: shareSplit(j.gainC) }));
+  const totals = hs.map((h) => F.sum(rows, (r) => (r.sp.lines.find((l) => l.shId === h.id) || {}).amountC || 0));
+  const stLbl = (j) => j.isReal ? pill("good", "Real") : j.v.status === "aceptada" ? pill("good", "Aceptada") : j.v.status === "borrador" ? pill("", "Borrador") : pill("warn", "Pendiente");
+  return `<div class="card">${head}
+    <div class="tablewrap" style="margin-top:8px"><table><thead><tr><th>Trabajo</th><th>Estado</th><th class="n">Ganancia</th>${hs.map((h) => `<th class="n">${esc(h.name)}<br><span class="small">${F.bpToInput(h.bp)} %</span></th>`).join("")}</tr></thead><tbody>
+    ${rows.map(({ j, sp }) => `<tr class="click" data-act="open-quote" data-id="${j.q.id}"><td><b>${esc(j.ev ? j.ev.name : j.v.client.name || j.q.number)}</b><br><span class="small muted">${esc(j.q.number)} · ${fmtDate(j.v.issuedOn)}</span></td>
+      <td>${stLbl(j)}</td><td class="n ${j.gainC < 0 ? "neg" : ""}">${M(j.gainC)}</td>${hs.map((h) => `<td class="n">${M((sp.lines.find((l) => l.shId === h.id) || {}).amountC || 0)}</td>`).join("")}</tr>`).join("")}</tbody>
+    <tfoot><tr><td colspan="2">Total</td><td class="n">${M(F.sum(rows, (r) => Math.max(r.j.gainC, 0)))}</td>${totals.map((t) => `<td class="n">${M(t)}</td>`).join("")}</tr></tfoot></table></div>
+    <p class="small muted" style="margin-top:8px">«Real» usa lo vendido menos los gastos registrados del evento; las demás usan la ganancia estimada de la cotización. Es una referencia: el dinero se reparte al aprobar una distribución abajo.</p></div>`;
+}
 /* ===================================================== arranque y eventos */
 document.addEventListener("click", async (ev) => {
   const el = ev.target.closest("[data-act]"); if (!el) return;
