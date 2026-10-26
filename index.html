@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="NexoSaldo: gestión financiera por evento para emprendedores.">
 <meta name="theme-color" content="#103C32">
+<meta name="nexosaldo-version" content="20261026.1949">
+<meta http-equiv="Cache-Control" content="no-cache">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="NexoSaldo">
@@ -206,8 +208,9 @@ input.bad{border-color:var(--bad)}
 <body>
 <div id="app"></div><div id="modal" hidden></div>
 <script src="config.js"></script>
-<script src="host.js"></script>
+<script src="host.js?v=20261026.1949"></script>
 <script>
+const APP_VERSION = "20261026.1949";
 /* NexoSaldo — capa financiera (navegador). Paridad con nexosaldo/finance (Python).
  * Importes en CENTAVOS enteros; porcentajes en PUNTOS BÁSICOS (1 % = 100 bp);
  * cantidades en MILÉSIMAS (1 unidad = 1000). Divisiones exactas con BigInt y
@@ -1372,7 +1375,7 @@ function quoteEditor(q, v, s) {
     ${field("q-iss", "Fecha de la cotización", inp("q-iss", v.issuedOn, d("issuedOn") + ' type="date"'))}
     ${field("q-val", "Válida hasta", inp("q-val", v.validUntil, d("validUntil") + ' type="date"'))}</div></div>
 
-  <div class="card"><div class="spread"><h2>Precios</h2><span class="small muted">El cliente solo verá la columna «Precio al cliente».</span></div>
+  <div class="card"><div class="spread"><h2>Precios</h2><span class="small muted">Escribe un % o el precio al cliente directamente. El cliente solo ve el precio al cliente.</span></div>
     <div class="tools">
       <div class="tool"><label for="q-budget">Presupuesto del cliente</label><div class="row">${moneyInp("q-budget", v.budgetC, d("budgetC") + ' style="max-width:150px"')}
         <label class="row small" style="gap:5px"><input type="checkbox" style="width:auto;min-height:0" ${v.budgetIncludesTax ? "checked" : ""} data-q="budgetIncludesTax">incluye impuestos</label>
@@ -1381,7 +1384,7 @@ function quoteEditor(q, v, s) {
       <div class="tool"><label for="q-pctall">Subir todos los precios reales un</label><div class="row"><input id="q-pctall" inputmode="decimal" value="${F.bpToInput(v.globalRateBp || 3000)}" style="max-width:80px"> <span>%</span>
         <button class="btn sm" data-act="q-pctall">Aplicar a todas</button></div></div>
     </div>
-    <div class="qhead"><span>Concepto</span><span>Cant.</span><span>Precio real (proveedor)</span><span>Cómo cobrar</span><span>% o precio</span><span style="text-align:right">Precio al cliente</span><span style="text-align:right">Ganancia</span><span></span></div>
+    <div class="qhead"><span>Concepto</span><span>Cant.</span><span>Precio real (proveedor)</span><span>Sumar %</span><span>Precio al cliente (c/u)</span><span style="text-align:right">Total al cliente</span><span style="text-align:right">Ganancia</span><span></span></div>
     <div class="lines">${v.lines.map((l, i) => lineRow(l, i, s.lines[i], v.lines.length)).join("")}</div>
     <div class="row" style="margin-top:8px"><button class="btn sm" data-act="q-addline">+ Agregar partida</button></div>
     <div id="q-tot">${quoteTotals(v, s)}</div>
@@ -1404,21 +1407,21 @@ function quoteEditor(q, v, s) {
       ${field("q-exec", "Fecha o plazo del servicio", inp("q-exec", v.execTerm, d("execTerm")))}
       ${field("q-notes", "Observaciones", `<textarea id="q-notes" ${d("notes")}>${esc(v.notes)}</textarea>`)}</div></details></div>`;
 }
+// Cada partida acepta las dos formas: escribir un % (el precio se calcula) o escribir
+// directamente el precio al cliente (la partida pasa a precio manual y el % se vacía).
 function lineRow(l, i, r, n) {
   const pct = l.method !== "manual"; const dl = (k) => `data-l="${i}" data-k="${k}"`;
   return `<div class="qline" data-row="${i}">
     <div class="d"><span class="lbl">Concepto</span><input value="${esc(l.desc)}" ${dl("desc")} placeholder="Ej.: Sonido" aria-label="Concepto"></div>
     <div><span class="lbl">Cantidad</span><input value="${F.milliToStr(l.qtyM)}" ${dl("qtyM")} inputmode="decimal" aria-label="Cantidad"></div>
     <div><span class="lbl">Precio real (proveedor)</span><input value="${F.centsToInput(l.costC)}" ${dl("costC")} inputmode="decimal" aria-label="Precio real unitario"></div>
-    <div><span class="lbl">Cómo cobrar</span><select ${dl("method")} aria-label="Cómo cobrar"><option value="recargo"${pct ? " selected" : ""}>Sumar %</option><option value="manual"${pct ? "" : " selected"}>Precio manual</option></select></div>
-    <div><span class="lbl">${pct ? "Porcentaje" : "Precio al cliente (c/u)"}</span>${pct
-      ? `<input value="${F.bpToInput(l.rateBp ?? 0)}" ${dl("rateBp")} inputmode="decimal" aria-label="Porcentaje">`
-      : `<input value="${F.centsToInput(l.manualC)}" ${dl("manualC")} inputmode="decimal" aria-label="Precio al cliente unitario">`}</div>
+    <div><span class="lbl">Sumar %</span><input id="lr-${i}" value="${pct ? F.bpToInput(l.rateBp ?? 0) : ""}" placeholder="${pct ? "0" : "manual"}" ${dl("rateBp")} inputmode="decimal" aria-label="Porcentaje a sumar"></div>
+    <div><span class="lbl">Precio al cliente (c/u)</span><input id="lp-${i}" value="${r.error ? "" : F.centsToInput(r.unitPriceC)}" ${dl("manualC")} inputmode="decimal" aria-label="Precio al cliente unitario"></div>
     <div class="out" id="lo-${i}">${lineOut(r)}</div>
     <div class="out" id="lg-${i}">${lineGain(r)}</div>
     <div><button class="btn ghost sm" data-act="q-delline" data-i="${i}" aria-label="Eliminar partida">✕</button></div></div>`;
 }
-const lineOut = (r) => r.error ? `<span class="err small">${esc(r.error)}</span>` : `<span class="lbl">Precio al cliente</span>${M(r.saleTotalC)}`;
+const lineOut = (r) => r.error ? `<span class="err small">${esc(r.error)}</span>` : `<span class="lbl">Total al cliente</span>${M(r.saleTotalC)}<br><span class="${r.manual ? "tag-m" : "tag-a"}">${r.manual ? "Precio manual" : "+" + F.bpToInput(r.rateBp ?? 0) + " %"}</span>`;
 const lineGain = (r) => r.error ? "" : `<span class="lbl">Ganancia</span><span class="${r.profitC < 0 ? "neg" : "pos"}">${M(r.profitC)}</span>`;
 function quoteTotals(v, s) {
   const target = v.budgetC; const ref = v.budgetIncludesTax ? s.totalC : s.netC; const gap = target ? target - ref : null;
@@ -1453,7 +1456,9 @@ const scheduleText = (v, s) => scheduleRows(v, s).map((x) => `${x.label} (${F.bp
 function setPath(o, path, val) { const ks = path.split("."); let t = o; ks.slice(0, -1).forEach((k) => (t = t[k])); t[ks[ks.length - 1]] = val; }
 function refreshQuote() {
   const v = ui.quoteDraft; const s = F.computeQuote(v);
-  s.lines.forEach((r, i) => { const o = document.getElementById("lo-" + i); if (o) o.innerHTML = lineOut(r); const g = document.getElementById("lg-" + i); if (g) g.innerHTML = lineGain(r); });
+  const act = document.activeElement;
+  s.lines.forEach((r, i) => { const o = document.getElementById("lo-" + i); if (o) o.innerHTML = lineOut(r); const g = document.getElementById("lg-" + i); if (g) g.innerHTML = lineGain(r);
+    const pIn = document.getElementById("lp-" + i); if (pIn && pIn !== act && !r.manual && !r.error) pIn.value = F.centsToInput(r.unitPriceC); });
   const t = document.getElementById("q-tot"); if (t) t.innerHTML = quoteTotals(v, s);
   const sc = document.getElementById("q-sched"); if (sc) sc.innerHTML = scheduleView(v, s);
 }
@@ -1475,6 +1480,9 @@ function onQuoteInput(el) {
   if (el.dataset.l !== undefined) { const l = v.lines[Number(el.dataset.l)]; const k = el.dataset.k; let val = el.value;
     if (k === "qtyM") val = F.toMilli(val); else if (k === "costC" || k === "manualC") val = F.toCents(val); else if (k === "rateBp") val = F.toBp(val);
     if (typeof val === "number" && Number.isNaN(val)) { el.classList.add("bad"); return; } el.classList.remove("bad");
+    if (k === "rateBp") { l.method = "recargo"; l.rateBp = val ?? 0; l.manualC = null; return refreshQuote(); }
+    if (k === "manualC") { if (val === null) return; l.method = "manual"; l.manualC = val; l.rateBp = null;
+      const rIn = document.getElementById("lr-" + el.dataset.l); if (rIn) { rIn.value = ""; rIn.placeholder = "manual"; } return refreshQuote(); }
     if (k === "method") { const cur = F.computeQuote(v).lines[Number(el.dataset.l)];
       if (val === "manual") { l.manualC = cur.unitPriceC || l.costC; l.rateBp = null; } else { l.manualC = null; l.rateBp = v.globalRateBp || 3000; }
       l.method = val; render(); return; }
@@ -1928,7 +1936,7 @@ ACT["clear-demo"] = () => confirmBox("Eliminar datos de demostración", "<p>Se e
 function hostCard() {
   const H = window.NEXOSALDO_HOST;
   if (!H) return `<div class="card"><h2>Sobre este prototipo</h2><p class="small">Los datos se guardan en el almacenamiento de este artifact y los ve quien tenga acceso a él. Para publicarlo en GitHub con usuarios y base de datos propia, usa la versión de la carpeta <code>site/</code>.</p></div>`;
-  if (H.kind === "local") return `<div class="card"><h2>Almacenamiento</h2><p class="small"><b>Modo local.</b> Los datos viven solo en este navegador y este dispositivo; si borras los datos del navegador se pierden. Para usar NexoSaldo desde varios dispositivos o con tu equipo, configura Supabase (ver docs/GITHUB.md).</p></div>`;
+  if (H.kind === "local") return `<div class="card"><h2>Almacenamiento</h2><p class="small">Versión de la app: <b>${esc(typeof APP_VERSION !== "undefined" ? APP_VERSION : "")}</b></p><p class="small"><b>Modo local.</b> Los datos viven solo en este navegador y este dispositivo; si borras los datos del navegador se pierden. Para usar NexoSaldo desde varios dispositivos o con tu equipo, configura Supabase (ver docs/GITHUB.md).</p></div>`;
   return `<div class="card"><h2>Cuenta y equipo</h2><dl class="kv"><dt>Sesión</dt><dd>${esc(H.email || "")}</dd><dt>Rol</dt><dd>${esc(H.role || "")}</dd></dl>
     <div class="row" style="margin-top:10px"><button class="btn" data-act="host-members">Ver miembros</button><button class="btn danger" data-act="host-signout">Cerrar sesión</button></div>
     ${H.role === "propietario" ? `<form class="f" id="member-form" style="margin-top:12px">${field("m-email", "Correo de la persona", inp("m-email", "", 'type="email" required'), "Debe haber creado su cuenta en NexoSaldo antes")}

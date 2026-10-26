@@ -123,6 +123,24 @@
   }
 
   const HOST = window.NEXOSALDO_HOST = { kind: USE_SB ? "supabase" : "local" };
+  /* ------------------------------------------------ aviso de versión nueva */
+  const myVer = (document.querySelector('meta[name="nexosaldo-version"]') || {}).content || "";
+  HOST.version = myVer;
+  async function checkUpdate() {
+    try {
+      const r = await fetch(location.pathname + "?buscar=" + Date.now(), { cache: "no-store" }); const html = await r.text();
+      const m = html.match(/name="nexosaldo-version" content="([^"]+)"/);
+      if (m && myVer && m[1] !== myVer && !document.getElementById("upd")) {
+        const b = document.createElement("div"); b.id = "upd";
+        b.style.cssText = "position:fixed;left:50%;transform:translateX(-50%);bottom:calc(90px + env(safe-area-inset-bottom,0px));z-index:95;background:#103C32;color:#fff;padding:10px 14px;border-radius:12px;display:flex;gap:10px;align-items:center;box-shadow:0 8px 30px rgba(0,0,0,.3);font:600 14px system-ui;max-width:92vw";
+        b.innerHTML = 'Hay una versión nueva de NexoSaldo <button style="background:#91C83E;color:#0B2621;border:0;border-radius:8px;padding:7px 12px;font:700 14px system-ui">Actualizar</button>';
+        b.querySelector("button").onclick = () => { location.href = location.pathname + "?v=" + m[1]; };
+        document.body.appendChild(b);
+      }
+    } catch {}
+  }
+  window.addEventListener("load", () => setTimeout(checkUpdate, 1500));
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) checkUpdate(); });
   let dbPromise = null;
   const getDb = () => (dbPromise = dbPromise || (USE_SB ? supabaseDb() : Promise.resolve(localDb())));
   window.claude = { use: async (name) => {
