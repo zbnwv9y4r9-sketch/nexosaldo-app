@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="NexoSaldo: gestión financiera por evento para emprendedores.">
 <meta name="theme-color" content="#103C32">
-<meta name="nexosaldo-version" content="20261026.1949">
+<meta name="nexosaldo-version" content="20261026.2002">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -208,9 +208,9 @@ input.bad{border-color:var(--bad)}
 <body>
 <div id="app"></div><div id="modal" hidden></div>
 <script src="config.js"></script>
-<script src="host.js?v=20261026.1949"></script>
+<script src="host.js?v=20261026.2002"></script>
 <script>
-const APP_VERSION = "20261026.1949";
+const APP_VERSION = "20261026.2002";
 /* NexoSaldo — capa financiera (navegador). Paridad con nexosaldo/finance (Python).
  * Importes en CENTAVOS enteros; porcentajes en PUNTOS BÁSICOS (1 % = 100 bp);
  * cantidades en MILÉSIMAS (1 unidad = 1000). Divisiones exactas con BigInt y
@@ -1378,22 +1378,21 @@ function quoteEditor(q, v, s) {
   <div class="card"><div class="spread"><h2>Precios</h2><span class="small muted">Escribe un % o el precio al cliente directamente. El cliente solo ve el precio al cliente.</span></div>
     <div class="tools">
       <div class="tool"><label for="q-budget">Presupuesto del cliente</label><div class="row">${moneyInp("q-budget", v.budgetC, d("budgetC") + ' style="max-width:150px"')}
-        <label class="row small" style="gap:5px"><input type="checkbox" style="width:auto;min-height:0" ${v.budgetIncludesTax ? "checked" : ""} data-q="budgetIncludesTax">incluye impuestos</label>
         <button class="btn pri sm" data-act="q-fit">Ajustar precios al presupuesto</button></div>
-        <small class="muted">Reparte el presupuesto entre las partidas según su precio real. Después puedes cambiar cualquier precio.</small></div>
+        <small class="muted">Reparte el presupuesto entre las partidas según su precio real${v.taxes.length ? ", contando los impuestos" : ""}. Después puedes cambiar cualquier precio.</small></div>
       <div class="tool"><label for="q-pctall">Subir todos los precios reales un</label><div class="row"><input id="q-pctall" inputmode="decimal" value="${F.bpToInput(v.globalRateBp || 3000)}" style="max-width:80px"> <span>%</span>
         <button class="btn sm" data-act="q-pctall">Aplicar a todas</button></div></div>
+      <div class="tool"><label>Impuestos en esta cotización</label><div class="row">${(c.taxes || []).map((t, i) => `<label class="row" style="gap:6px"><input type="checkbox" style="width:auto;min-height:0" data-qtax="${i}" ${v.taxes.some((x) => x.name === t.name) ? "checked" : ""}>Cobrar ${esc(t.name)} ${F.bpToInput(t.bp)} %</label>`).join("") || '<span class="small muted">No hay impuestos configurados (Configuración).</span>'}</div>
+        <small class="muted">Desmárcalo si esta cotización va sin impuesto. Los impuestos no son ganancia tuya.</small></div>
     </div>
     <div class="qhead"><span>Concepto</span><span>Cant.</span><span>Precio real (proveedor)</span><span>Sumar %</span><span>Precio al cliente (c/u)</span><span style="text-align:right">Total al cliente</span><span style="text-align:right">Ganancia</span><span></span></div>
     <div class="lines">${v.lines.map((l, i) => lineRow(l, i, s.lines[i], v.lines.length)).join("")}</div>
     <div class="row" style="margin-top:8px"><button class="btn sm" data-act="q-addline">+ Agregar partida</button></div>
     <div id="q-tot">${quoteTotals(v, s)}</div>
-    <details style="margin-top:10px"><summary class="small" style="cursor:pointer">Descuento e impuestos</summary>
+    <details style="margin-top:10px"><summary class="small" style="cursor:pointer">Descuento</summary>
       <div class="f" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:8px">
       ${field("q-dt", "Descuento", sel("q-dt", [["ninguno", "Sin descuento"], ["porcentaje", "Porcentaje"], ["importe", "Importe fijo"]], v.discountType, d("discountType")))}
-      ${field("q-dv", v.discountType === "importe" ? "Importe del descuento" : "Porcentaje", inp("q-dv", v.discountType === "importe" ? F.centsToInput(v.discountValue) : F.bpToInput(v.discountValue), d("discountValue") + ' inputmode="decimal"' + (v.discountType === "ninguno" ? " disabled" : "")))}
-      <div class="fld full"><label>Impuestos</label><div class="row">${(c.taxes || []).map((t, i) => `<label class="row small" style="gap:6px"><input type="checkbox" style="width:auto;min-height:0" data-qtax="${i}" ${v.taxes.some((x) => x.name === t.name) ? "checked" : ""}>${esc(t.name)} ${F.bpToInput(t.bp)} %</label>`).join("") || '<span class="small muted">Sin impuestos configurados.</span>'}</div>
-      <small>Los impuestos se cobran al cliente pero no son ganancia tuya.</small></div></div></details></div>
+      ${field("q-dv", v.discountType === "importe" ? "Importe del descuento" : "Porcentaje", inp("q-dv", v.discountType === "importe" ? F.centsToInput(v.discountValue) : F.bpToInput(v.discountValue), d("discountValue") + ' inputmode="decimal"' + (v.discountType === "ninguno" ? " disabled" : "")))}</div></div></details></div>
 
   <div class="card"><h2>Forma de pago</h2>
     <div class="f" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">
@@ -1424,7 +1423,7 @@ function lineRow(l, i, r, n) {
 const lineOut = (r) => r.error ? `<span class="err small">${esc(r.error)}</span>` : `<span class="lbl">Total al cliente</span>${M(r.saleTotalC)}<br><span class="${r.manual ? "tag-m" : "tag-a"}">${r.manual ? "Precio manual" : "+" + F.bpToInput(r.rateBp ?? 0) + " %"}</span>`;
 const lineGain = (r) => r.error ? "" : `<span class="lbl">Ganancia</span><span class="${r.profitC < 0 ? "neg" : "pos"}">${M(r.profitC)}</span>`;
 function quoteTotals(v, s) {
-  const target = v.budgetC; const ref = v.budgetIncludesTax ? s.totalC : s.netC; const gap = target ? target - ref : null;
+  const target = v.budgetC; const ref = s.totalC; const gap = target ? target - ref : null;
   return `<div class="totals"><div><span>Precio real total</span><b>${M(s.costTotalC)}</b></div>
     <div><span>Precio al cliente${s.taxC ? " (sin impuestos)" : ""}</span><b>${M(s.netC)}</b></div>
     ${s.taxC ? `<div><span>Total con impuestos</span><b>${M(s.totalC)}</b></div>` : ""}
@@ -1490,14 +1489,14 @@ function onQuoteInput(el) {
   refreshQuote();
 }
 ACT["q-fit"] = () => { const v = ui.quoteDraft; try {
-    const r = F.fitToBudget(v, v.budgetC, v.budgetIncludesTax); v.lines = r.lines; render();
+    const r = F.fitToBudget(v, v.budgetC, true); v.lines = r.lines; render();
     toast(r.exact ? `Precios ajustados: la cotización suma ${M(v.budgetC)}.` : "Precios ajustados (revisa los centavos).");
   } catch (e) { toast(e.message); } };
 ACT["q-pctall"] = () => { const v = ui.quoteDraft; const bp = F.toBp(document.getElementById("q-pctall").value);
   if (!(bp >= 0)) return toast("Escribe un porcentaje válido.");
   v.globalRateBp = bp; v.lines = F.applyPercentAll(v.lines, bp); render(); toast(`Se sumó ${F.bpToInput(bp)} % a todos los precios reales.`); };
 CHG.qtax = (el) => { const v = ui.quoteDraft; const t = cfg().taxes[Number(el.dataset.qtax)];
-  v.taxes = el.checked ? [...v.taxes.filter((x) => x.name !== t.name), clone(t)] : v.taxes.filter((x) => x.name !== t.name); onQuoteInput({ dataset: {} }); };
+  v.taxes = el.checked ? [...v.taxes.filter((x) => x.name !== t.name), clone(t)] : v.taxes.filter((x) => x.name !== t.name); render(); };
 CHG.qev = async (el) => { const q = get("quotes", ui.quoteId); q.eventId = el.value || null; const ev = S.events[q.eventId];
   if (ev && !ui.quoteDraft.client.name) ui.quoteDraft.client = { name: ev.client || "", company: ev.clientCompany || "", email: ev.clientEmail || "", phone: ev.clientPhone || "" };
   q.versions[q.versions.length - 1] = stripDraft(ui.quoteDraft); await save("quotes", q); };
