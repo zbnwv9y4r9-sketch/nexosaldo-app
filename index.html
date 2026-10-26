@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="NexoSaldo: gestión financiera por evento para emprendedores.">
 <meta name="theme-color" content="#103C32">
-<meta name="nexosaldo-version" content="20261026.2211">
+<meta name="nexosaldo-version" content="20261026.2230">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -209,9 +209,9 @@ input.bad{border-color:var(--bad)}
 <body>
 <div id="app"></div><div id="modal" hidden></div>
 <script src="config.js"></script>
-<script src="host.js?v=20261026.2211"></script>
+<script src="host.js?v=20261026.2230"></script>
 <script>
-const APP_VERSION = "20261026.2211";
+const APP_VERSION = "20261026.2230";
 /* NexoSaldo — capa financiera (navegador). Paridad con nexosaldo/finance (Python).
  * Importes en CENTAVOS enteros; porcentajes en PUNTOS BÁSICOS (1 % = 100 bp);
  * cantidades en MILÉSIMAS (1 unidad = 1000). Divisiones exactas con BigInt y
@@ -1000,7 +1000,7 @@ VIEWS.dashboard = () => {
     <div class="card"><h2>Ganancia por mes</h2>${barChart(lbl, [{ name: "Ganancia", color: "var(--s1)", values: mf.map((x) => x.profit) }], { label: "Ganancia por mes", negColor: "var(--bad)" })}</div>
     <div class="card"><h2>Presupuesto del cliente vs. costo real</h2>${evs.length ? barChart(evs.slice(0, 8).map((f) => f.ev.code.slice(-3)), [{ name: "Presupuesto del cliente", color: "var(--s3)", values: evs.slice(0, 8).map((f) => f.budget) }, { name: "Costo real", color: "var(--s2)", values: evs.slice(0, 8).map((f) => f.expenses) }], { label: "Presupuesto del cliente frente a costo real" }) + `<p class="small muted">${evs.slice(0, 8).map((f) => `${esc(f.ev.code.slice(-3))} = ${esc(f.ev.name)}`).join(" · ")}</p>` : '<p class="muted small">Sin eventos en el período.</p>'}</div>
     <div class="card"><h2>Ganancia por evento</h2>${hbars(evs.filter((f) => f.revenue || f.expenses).sort((a, b) => b.profit - a.profit).map((f) => ({ label: f.ev.name, value: f.profit, text: `${M(f.profit)} · ${F.fmtPct(f.marginBp, "s/ventas")}`, tip: `Vendido ${M(f.revenue)} · Gastos ${M(f.expenses)}` })), { empty: "Aún no hay ventas ni gastos en eventos del período." })}</div>
-    <div class="card"><h2>Distribución entre accionistas</h2>${lastDist ? `<p class="small muted">Última distribución aprobada: ${M(lastDist.distributedC)}</p>` : ""}${hbars(lastDist ? lastDist.lines.map((l) => ({ label: `${l.name} (${F.bpToInput(l.bp)} %)`, value: l.amountC, text: M(l.amountC) })) : [], { empty: "Todavía no hay distribuciones aprobadas." })}</div>
+    <div class="card"><div class="spread"><h2>Distribución entre accionistas</h2><button class="btn sm" data-act="nav" data-v="shareholders">Ver detalle</button></div>${dashShareCard(R, eid, lastDist)}</div>
   </div>`;
 };
 
@@ -1015,6 +1015,7 @@ VIEWS.events = () => {
       <h2>${esc(e.name)}</h2><span class="small muted">${esc(e.client || "Sin cliente")}${e.demo ? " · demo" : ""}</span>
       <dl class="kv" style="margin:0"><dt>Presupuesto del cliente</dt><dd>${f.budget ? M(f.budget) : "—"}</dd><dt>Cotizado</dt><dd>${q ? M(q.netC) : "—"}</dd>
       <dt>Costo real</dt><dd>${M(f.expenses || (q ? q.costTotalC : 0))}</dd><dt>Ganancia</dt><dd class="${(f.revenue ? f.profit : q ? q.profitC : 0) < 0 ? "neg" : ""}">${M(f.revenue ? f.profit : q ? q.profitC : 0)}${f.revenue ? "" : q ? " (estimada)" : ""}</dd></dl>
+      ${evShareRows(f.revenue ? f.profit : q ? q.profitC : 0)}
       ${owed > 0 ? `<div class="row">${pill("warn", "Falta por cobrar " + M(owed))}</div>` : f.revenue ? `<div class="row">${pill("good", "Cobrado completo")}</div>` : ""}</button>`; }).join("")}</div>`;
 };
 function eventForm(e) {
@@ -1097,6 +1098,7 @@ const EV_TAB_VIEW = {
       ${kpi("Costo real", money(f.expenses || (q ? q.costTotalC : 0)), f.expenses ? "Gastos registrados" : q ? "Según precios de proveedores" : "")}
       ${kpi("Cobrado", money(f.collected))}
       ${kpi("Falta por cobrar", money(owed), due[0] ? `Próximo: ${M(due[0].remainingC)} el ${fmtDate(due[0].due)}` : "")}</div>
+    ${(() => { const rows = evShareRows(f.revenue ? f.profit : q ? q.profitC : 0); return rows ? `<div class="card"><h2>Reparto entre accionistas</h2>${rows}<p class="small muted" style="margin-top:6px">${f.revenue ? "Según la ganancia real del evento." : "Estimado según la cotización; se actualiza cuando registres la venta y los gastos."}</p></div>` : ""; })()}
     ${due.length ? `<div class="card"><h2>Pagos pendientes del cliente</h2><div class="due-list">${due.map((x) => dueRow(x)).join("")}</div></div>` : ""}
     <div class="grid g2"><div class="card"><h2>Cliente</h2><dl class="kv"><dt>Nombre</dt><dd>${esc(e.client || "—")}</dd><dt>Empresa</dt><dd>${esc(e.clientCompany || "—")}</dd>
       <dt>Correo</dt><dd>${esc(e.clientEmail || "—")}</dd><dt>Teléfono</dt><dd>${esc(e.clientPhone || "—")}</dd></dl></div>
@@ -1316,6 +1318,28 @@ CHG.attach = async (el) => { const file = el.files[0]; if (!file || !assets) ret
 ACT["export-expenses"] = () => offerDownload(`gastos_${todayISO()}.csv`, csv([["Fecha", "Evento", "Categoría", "Descripción", "Proveedor", "Cantidad", "Importe", "Pagado", "Pendiente", "Estado", "Método", "Referencia", "Vencimiento", "Anulado", "Motivo anulación"],
   ...all("expenses").sort((a, b) => a.date.localeCompare(b.date)).map((x) => [x.date, x.eventId ? evName(x.eventId) : "General", x.category, x.desc, x.supplier, F.milliToStr(x.qtyM || 1000), centsCsv(x.amountC), centsCsv(expPaid(x)),
     centsCsv(x.amountC - expPaid(x)), x.voided ? "anulado" : expStatus(x), x.method, x.ref, x.due, x.voided ? "sí" : "no", x.voidReason || ""])]));
+
+// Reparto estimado de la ganancia de los trabajos cotizados del período (+ última distribución aprobada)
+function dashShareCard(R, eid, lastDist) {
+  const hs = F.effectiveHolders(all("shareholders"), todayISO());
+  if (!hs.length) return `<p class="small muted">Agrega a los accionistas y su % en <b>Más → Accionistas</b> para ver aquí cuánto le toca a cada uno.</p>`;
+  const chk = shareSplit(0); if (chk.error) return `<div class="banner err">${esc(chk.error)}</div>`;
+  const jobs = quotedJobs().filter((j) => eid ? j.q.eventId === eid : inR(j.ev ? j.ev.start : j.v.issuedOn, R));
+  const gain = F.sum(jobs, (j) => Math.max(j.gainC, 0)); const sp = shareSplit(gain);
+  let html = jobs.length ? `<p class="small muted">Ganancia de ${jobs.length} trabajo${jobs.length > 1 ? "s" : ""} cotizado${jobs.length > 1 ? "s" : ""} del período: <b>${M(gain)}</b></p>` +
+    hbars(sp.lines.map((l) => ({ label: `${l.name} (${F.bpToInput(l.bp)} %)`, value: l.amountC, text: M(l.amountC) })))
+    : `<p class="small muted">No hay trabajos cotizados en este período. Cambia el mes arriba o elige «Todo».</p>`;
+  if (lastDist) html += `<p class="small muted" style="margin-top:12px">Última distribución aprobada: <b>${M(lastDist.distributedC)}</b> (${fmtDate(lastDist.from)} – ${fmtDate(lastDist.to)})</p>`;
+  return html;
+}
+
+// Lo que le toca a cada accionista de la ganancia de un evento (tarjeta y resumen)
+function evShareRows(gainC) {
+  const sp = shareSplit(gainC); if (sp.none) return "";
+  if (sp.error) return `<p class="small neg" style="margin:0">${esc(sp.error)}</p>`;
+  return `<div style="border-top:1px solid var(--rule);padding-top:8px"><span class="small muted">Reparto entre accionistas</span>
+    <dl class="kv" style="margin:4px 0 0">${sp.lines.map((l) => `<dt>${esc(l.name)} (${F.bpToInput(l.bp)} %)</dt><dd>${M(l.amountC)}</dd>`).join("")}</dl></div>`;
+}
 /* ===================================================== cotizaciones */
 function quotesTable(list, evId) {
   list = list.sort((a, b) => (b.number || "").localeCompare(a.number || ""));
