@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="NexoSaldo: gestión financiera por evento para emprendedores.">
 <meta name="theme-color" content="#103C32">
-<meta name="nexosaldo-version" content="20261026.2230">
+<meta name="nexosaldo-version" content="20261110.2122">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -200,6 +200,51 @@ input.bad{border-color:var(--bad)}
   .qline .out{text-align:left;padding:2px}
   .toast{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 }
+/* agenda de la portada */
+.agenda{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,320px);gap:14px;align-items:start}
+.ag-panel{display:flex;flex-direction:column;gap:14px;min-width:0}
+.cal-title{text-transform:capitalize;font-size:1.25rem}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cal-wd{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;text-align:center;font-weight:600;padding:2px 0 4px}
+.cal-d{all:unset;box-sizing:border-box;cursor:pointer;min-height:96px;border:1px solid var(--rule);border-radius:8px;padding:5px;display:flex;flex-direction:column;gap:3px;background:var(--surface);min-width:0}
+.cal-d:hover{border-color:var(--muted)}
+.cal-d:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+.cal-d[aria-pressed="true"]{box-shadow:0 0 0 2px var(--focus)}
+.cal-d .n{font-weight:600;font-size:.84rem;width:24px;height:24px;display:grid;place-items:center;border-radius:99px;flex:none}
+.cal-d.past:not(.prog):not(.done) .n{color:var(--muted)}
+.cal-d.today .n{background:var(--brand);color:#fff}
+:root[data-theme="dark"] .cal-d.today .n{background:var(--lime);color:#0B2621}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .cal-d.today .n{background:var(--lime);color:#0B2621}}
+.cal-d.prog{background:color-mix(in srgb,var(--s1) 13%,var(--surface));border-color:color-mix(in srgb,var(--s1) 50%,var(--rule))}
+.cal-d.done{background:color-mix(in srgb,var(--s3) 11%,var(--surface));border-color:color-mix(in srgb,var(--s3) 40%,var(--rule))}
+.chip{display:block;font-size:.72rem;font-weight:600;line-height:1.35;border-radius:5px;padding:1px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:var(--s1);color:#fff}
+.chip.done{background:var(--s3)} .chip.more{background:transparent;color:var(--ink-2);padding:0 2px}
+.cal-dots{display:none;gap:3px;justify-content:center;align-items:center;margin-top:auto}
+.cal-dots i{width:7px;height:7px;border-radius:50%;background:var(--s1)} .cal-dots i.done{background:var(--s3)}
+.cal-dots b{font-size:.65rem;line-height:1;color:var(--ink-2)}
+.cal-top{display:flex;align-items:center;justify-content:space-between;gap:2px}
+.cal-count{font-size:.66rem;font-weight:700;min-width:18px;height:18px;padding:0 5px;border-radius:99px;display:grid;place-items:center;background:var(--ink);color:var(--bg)}
+.chip em{font-style:normal;font-weight:700;opacity:.85;font-variant-numeric:tabular-nums}
+.ag-time{flex:none;width:46px;display:flex;flex-direction:column;font-weight:700;font-size:.85rem;font-variant-numeric:tabular-nums;line-height:1.2}
+.ag-time small{font-weight:500;color:var(--muted);font-size:.74rem}
+.ag-list{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.ag-row{all:unset;box-sizing:border-box;cursor:pointer;display:flex;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--rule);border-radius:8px;background:var(--surface)}
+.ag-row:hover{border-color:var(--muted)} .ag-row:focus-visible{outline:2px solid var(--focus)}
+.ag-row > i{width:4px;align-self:stretch;border-radius:4px;background:var(--s1);flex:none} .ag-row.done > i{background:var(--s3)}
+.ag-row b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ag-row .small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ag-side{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex:none}
+@media (max-width:1060px){.agenda{grid-template-columns:1fr}}
+@media (max-width:640px){
+  .cal-grid{gap:3px}
+  .cal-d{min-height:52px;padding:4px 2px;align-items:center}
+  .cal-d .chip{display:none}
+  .cal-dots{display:flex}
+  .cal-top{flex-direction:column;gap:1px}
+  .cal-count{position:absolute;top:2px;right:2px;min-width:15px;height:15px;font-size:.6rem;padding:0 3px}
+  .cal-d{position:relative}
+  .cal-wd{font-size:.64rem;letter-spacing:0}
+}
 .mhead{display:none;align-items:center;gap:10px;margin-bottom:4px}
 .mhead b{font-family:var(--f-display);font-size:1.05rem}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
@@ -209,9 +254,9 @@ input.bad{border-color:var(--bad)}
 <body>
 <div id="app"></div><div id="modal" hidden></div>
 <script src="config.js"></script>
-<script src="host.js?v=20261026.2230"></script>
+<script src="host.js?v=20261110.2122"></script>
 <script>
-const APP_VERSION = "20261026.2230";
+const APP_VERSION = "20261110.2122";
 /* NexoSaldo — capa financiera (navegador). Paridad con nexosaldo/finance (Python).
  * Importes en CENTAVOS enteros; porcentajes en PUNTOS BÁSICOS (1 % = 100 bp);
  * cantidades en MILÉSIMAS (1 unidad = 1000). Divisiones exactas con BigInt y
@@ -970,11 +1015,85 @@ function dueRow(x, compact) {
   return `<div class="due ${x.status}"><div style="min-width:0"><b>${esc(ev)}</b> · ${esc(x.label)}<br><span class="small muted">${esc(x.sale.client || "")} · ${fmtDate(x.due)}</span></div>
     <div class="row"><b class="num">${M(x.remainingC)}</b>${pill(lbl[0], lbl[1])}${compact ? "" : `<button class="btn sm pri" data-act="add-receipt" data-id="${x.sale.id}" data-amt="${x.remainingC}">Registrar pago</button>${window.NEXOSALDO_HOST ? `<button class="btn sm" data-act="ics" data-id="${x.sale.id}" data-i="${x.idx}">Recordatorio</button>` : ""}`}</div></div>`;
 }
+/* ===================================================== agenda (portada) */
+const DOW_L = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+const DOW_S = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+// Realizado = finalizado o con fecha ya pasada; Programado = el resto. Los cancelados no se muestran.
+const calKind = (e, today) => (e.status === "finalizado" || (e.end || e.start) < today ? "done" : "prog");
+function calEventsByDay(from, to) {
+  const map = {}; const today = todayISO();
+  all("events").filter((e) => e.status !== "cancelado" && e.start).forEach((e) => {
+    const end = e.end && e.end >= e.start ? e.end : e.start; if (end < from || e.start > to) return;
+    let d = e.start < from ? from : e.start; let n = 0;
+    while (d <= end && d <= to && n++ < 400) { (map[d] = map[d] || []).push({ e, kind: calKind(e, today) }); d = addDays(d, 1); }
+  });
+  Object.values(map).forEach((l) => l.sort((a, b) => (a.e.time || "").localeCompare(b.e.time || "") || a.e.name.localeCompare(b.e.name)));
+  return map;
+}
+const evHours = (e) => (e.time ? e.time + (e.timeEnd ? "–" + e.timeEnd : "") : "");
+// minutos desde medianoche; sin hora = todo el día
+const toMin = (hm) => { if (!hm) return null; const [h, m] = hm.split(":").map(Number); return h * 60 + m; };
+function evOverlap(a, b) {
+  const as = toMin(a.time), bs = toMin(b.time); if (as === null || bs === null) return false;
+  const ae = toMin(a.timeEnd) ?? as + 60, be = toMin(b.timeEnd) ?? bs + 60; return as < be && bs < ae;
+}
+// eventos activos que coinciden en fecha y se cruzan en horario con el evento dado
+function evClashes(e) {
+  const end = e.end && e.end >= e.start ? e.end : e.start;
+  return all("events").filter((o) => o.id !== e.id && o.status !== "cancelado" && o.start <= end && (o.end || o.start) >= e.start && evOverlap(e, o));
+}
+const longDate = (iso) => { const d = new Date(iso + "T12:00:00"); return `${DOW_L[d.getDay()]} ${d.getDate()} de ${MONTHS_L[d.getMonth()]}`; };
+function agendaRow(e, today, dayList) {
+  const k = calKind(e, today); const days = Math.round((new Date(e.start + "T12:00:00") - new Date(today + "T12:00:00")) / 864e5);
+  const when = days === 0 ? "Hoy" : days === 1 ? "Mañana" : days > 1 ? `En ${days} días` : (e.end || e.start) >= today ? "En curso" : fmtDate(e.start);
+  const clash = dayList && dayList.some((o) => o.e.id !== e.id && evOverlap(e, o.e));
+  return `<button class="ag-row ${k}" data-act="open-event" data-id="${e.id}"><i></i>${dayList ? `<span class="ag-time">${e.time ? esc(e.time) + (e.timeEnd ? `<small>${esc(e.timeEnd)}</small>` : "") : "<small>Todo el día</small>"}</span>` : ""}<div style="min-width:0;flex:1"><b>${esc(e.name)}</b>
+    <span class="small muted">${!dayList && e.time ? esc(evHours(e)) + " · " : ""}${esc(e.code)}${e.client ? " · " + esc(e.client) : ""}${e.end && e.end !== e.start ? ` · ${fmtDate(e.start)} – ${fmtDate(e.end)}` : ""}</span></div>
+    <div class="ag-side">${dayList ? (clash ? pill("warn", "Choca") : evStatusPill(e.status)) : `<span class="small muted">${when}</span>${evStatusPill(e.status)}`}</div></button>`;
+}
+function agendaHTML() {
+  const today = todayISO(); const ym = ui.calMonth || monthOf(today); const sel = ui.calDay || today;
+  const [y, m] = ym.split("-").map(Number); const from = ym + "-01", to = monthEnd(ym);
+  const map = calEventsByDay(from, to); const lead = (new Date(y, m - 1, 1).getDay() + 6) % 7; const nDays = Number(to.slice(8));
+  const inMonth = new Set(); Object.values(map).forEach((l) => l.forEach((x) => inMonth.add(x.e.id)));
+  let cells = DOW_S.map((d) => `<div class="cal-wd">${d}</div>`).join("") + '<div class="cal-blank"></div>'.repeat(lead);
+  for (let d = 1; d <= nDays; d++) {
+    const iso = `${ym}-${String(d).padStart(2, "0")}`; const l = map[iso] || [];
+    const cls = [l.some((x) => x.kind === "prog") ? "prog" : l.length ? "done" : "", iso === today ? "today" : "", iso < today ? "past" : ""].filter(Boolean).join(" ");
+    const lbl = `${longDate(iso)}: ${l.length ? l.map((x) => (x.e.time ? x.e.time + " " : "") + x.e.name).join(", ") : "sin eventos"}`;
+    cells += `<button class="cal-d ${cls}" data-act="cal-day" data-d="${iso}" aria-pressed="${iso === sel}" aria-label="${esc(lbl)}"><span class="cal-top"><span class="n">${d}</span>${l.length > 1 ? `<span class="cal-count" title="${l.length} eventos">${l.length}</span>` : ""}</span>
+      ${l.slice(0, 3).map((x) => `<span class="chip ${x.kind}" data-act="open-event" data-id="${x.e.id}" title="${esc((x.e.time ? evHours(x.e) + " · " : "") + x.e.name)}">${x.e.time ? `<em>${esc(x.e.time)}</em> ` : ""}${esc(x.e.name)}</span>`).join("")}
+      ${l.length > 3 ? `<span class="chip more">+${l.length - 3} más</span>` : ""}
+      ${l.length ? `<span class="cal-dots">${l.slice(0, 3).map((x) => `<i class="${x.kind}"></i>`).join("")}${l.length > 3 ? "<b>+</b>" : ""}</span>` : ""}</button>`;
+  }
+  const selList = calEventsByDay(sel, sel)[sel] || [];
+  const upcoming = all("events").filter((e) => e.status !== "cancelado" && e.status !== "finalizado" && (e.end || e.start) >= today)
+    .sort((a, b) => a.start.localeCompare(b.start)).slice(0, 6);
+  return `<div class="agenda"><div class="card cal">
+      <div class="spread"><div><h2 class="cal-title">${esc(ymLabel(ym, true))}</h2><span class="small muted">${inMonth.size ? `${inMonth.size} evento${inMonth.size > 1 ? "s" : ""} este mes` : "Sin eventos este mes"}</span></div>
+        <div class="row" style="gap:6px"><button class="btn sm" data-act="cal-move" data-n="-1" aria-label="Mes anterior">‹</button><button class="btn sm" data-act="cal-move" data-n="0">Hoy</button><button class="btn sm" data-act="cal-move" data-n="1" aria-label="Mes siguiente">›</button></div></div>
+      <div class="legend" style="margin:10px 0 8px"><span><i style="background:var(--s1)"></i>Programado</span><span><i style="background:var(--s3)"></i>Realizado</span><span><i style="background:var(--brand);border-radius:50%"></i>Hoy</span></div>
+      <div class="cal-grid">${cells}</div></div>
+    <div class="ag-panel">
+      <div class="card"><div class="spread"><h2>${esc(sel === today ? "Hoy, " + longDate(sel) : longDate(sel)[0].toUpperCase() + longDate(sel).slice(1))}</h2>
+        <button class="btn sm pri" data-act="new-event" data-date="${sel}">+ Evento</button></div>
+        <div class="ag-list">${selList.length ? selList.map((x) => agendaRow(x.e, today, selList)).join("") : '<p class="small muted" style="margin:8px 0 0">No hay eventos este día.</p>'}</div></div>
+      <div class="card"><h2>Próximos eventos</h2><div class="ag-list">${upcoming.length ? upcoming.map((e) => agendaRow(e, today)).join("") : '<p class="small muted" style="margin:0">No hay eventos programados.</p>'}</div></div>
+    </div></div>`;
+}
+ACT["cal-day"] = (el) => { ui.calDay = el.dataset.d; render(); };
+ACT["cal-move"] = (el) => { const n = Number(el.dataset.n); const today = todayISO();
+  if (!n) { ui.calMonth = monthOf(today); ui.calDay = today; }
+  else { let [y, m] = (ui.calMonth || monthOf(today)).split("-").map(Number); m += n; if (m < 1) { m = 12; y--; } if (m > 12) { m = 1; y++; }
+    ui.calMonth = `${y}-${String(m).padStart(2, "0")}`; ui.calDay = monthOf(today) === ui.calMonth ? today : ui.calMonth + "-01"; }
+  render(); };
+
 VIEWS.dashboard = () => {
   const R = rangeFromFilter(ui.filter), eid = ui.filter.eventId; const p = periodFacts(R, eid);
-  const head = `<div class="topline"><div><h1>Inicio</h1><p>${esc(R.label)}${eid ? " · " + esc(evName(eid)) : ""} · importes en USD</p></div>${filterBar()}</div>`;
+  const top = `<div class="topline"><div><h1>Agenda</h1><p>Toca un día para ver sus eventos</p></div><button class="btn pri" data-act="new-event">Nuevo evento</button></div>` + agendaHTML();
+  const head = top + `<div class="topline" style="margin-top:10px"><div><h2>Resumen financiero</h2><p>${esc(R.label)}${eid ? " · " + esc(evName(eid)) : ""} · importes en USD</p></div>${filterBar()}</div>`;
   if (!all("events").length && !all("sales").length && !all("expenses").length) {
-    return head + `<div class="card empty"><b>Todavía no hay datos</b><p>Crea tu primer evento y cotízalo: escribe los precios de tus proveedores y súbelos con un % o a mano.</p>
+    return top + `<div class="card empty"><b>Todavía no hay datos</b><p>Crea tu primer evento y cotízalo: escribe los precios de tus proveedores y súbelos con un % o a mano.</p>
       <button class="btn pri" data-act="new-event">Crear el primer evento</button></div>`;
   }
   const alerts = dueAlerts(); const owed = F.sum(dueItems(), (x) => x.remainingC);
@@ -1011,15 +1130,15 @@ VIEWS.events = () => {
   if (!evs.length) return head + `<div class="card empty"><b>Sin eventos</b><p>Cada evento tiene su propio expediente: cotización, presupuesto, gastos, cobros y resultado.</p><button class="btn pri" data-act="new-event">Crear evento</button></div>`;
   return head + `<div class="grid g3">${evs.map((e) => { const f = evFacts(e); const q = quotedFor(e.id); const owed = F.sum(evSales(e.id), (x) => F.saleGross(x) - F.saleCollected(x));
     return `<button class="card" style="text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:8px" data-act="open-event" data-id="${e.id}">
-      <div class="spread"><span class="small muted">${esc(e.code)} · ${fmtDate(e.start)}</span>${evStatusPill(e.status)}</div>
+      <div class="spread"><span class="small muted">${esc(e.code)} · ${fmtDate(e.start)}${e.time ? " · " + esc(evHours(e)) : ""}</span>${evStatusPill(e.status)}</div>
       <h2>${esc(e.name)}</h2><span class="small muted">${esc(e.client || "Sin cliente")}${e.demo ? " · demo" : ""}</span>
       <dl class="kv" style="margin:0"><dt>Presupuesto del cliente</dt><dd>${f.budget ? M(f.budget) : "—"}</dd><dt>Cotizado</dt><dd>${q ? M(q.netC) : "—"}</dd>
       <dt>Costo real</dt><dd>${M(f.expenses || (q ? q.costTotalC : 0))}</dd><dt>Ganancia</dt><dd class="${(f.revenue ? f.profit : q ? q.profitC : 0) < 0 ? "neg" : ""}">${M(f.revenue ? f.profit : q ? q.profitC : 0)}${f.revenue ? "" : q ? " (estimada)" : ""}</dd></dl>
       ${evShareRows(f.revenue ? f.profit : q ? q.profitC : 0)}
       ${owed > 0 ? `<div class="row">${pill("warn", "Falta por cobrar " + M(owed))}</div>` : f.revenue ? `<div class="row">${pill("good", "Cobrado completo")}</div>` : ""}</button>`; }).join("")}</div>`;
 };
-function eventForm(e) {
-  e = e || { name: "", code: nextCode("EV", "events", "code"), kind: "", client: "", clientCompany: "", clientEmail: "", clientPhone: "", start: todayISO(), end: todayISO(), status: "planificado", description: "", notes: "" };
+function eventForm(e, date) {
+  e = e || { name: "", code: nextCode("EV", "events", "code"), kind: "", client: "", clientCompany: "", clientEmail: "", clientPhone: "", start: date || todayISO(), end: date || todayISO(), time: "", timeEnd: "", status: "planificado", description: "", notes: "" };
   return `<h2>${e.id ? "Editar evento" : "Nuevo evento"}</h2><form class="f" id="ev-form" data-id="${e.id || ""}">
     ${field("name", "Nombre del evento", inp("name", e.name, "required"), "", true)}
     ${field("code", "Código único", inp("code", e.code, "required"))}
@@ -1027,6 +1146,8 @@ function eventForm(e) {
     ${field("kind", "Tipo", inp("kind", e.kind, 'placeholder="Boda, feria, corporativo…"'), "Sirve para comparar eventos similares")}
     ${field("start", "Inicio", inp("start", e.start, 'type="date" required'))}
     ${field("end", "Finalización", inp("end", e.end, 'type="date" required'))}
+    ${field("time", "Hora de inicio", inp("time", e.time || "", 'type="time"'), "Opcional. Ordena los eventos del mismo día")}
+    ${field("timeEnd", "Hora de fin", inp("timeEnd", e.timeEnd || "", 'type="time"'), "Opcional")}
     ${field("status", "Estado", sel("status", Object.entries(STATUS_EV).filter(([k]) => k !== "cancelado" || e.status === "cancelado").map(([k, v]) => [k, v[1]]), e.status))}
     ${field("client", "Cliente", inp("client", e.client))}
     ${field("clientCompany", "Empresa del cliente", inp("clientCompany", e.clientCompany))}
@@ -1037,7 +1158,7 @@ function eventForm(e) {
     <p class="err form-err full" hidden></p>
     <div class="row full" style="justify-content:flex-end"><button type="button" class="btn" data-act="close">Cancelar</button><button class="btn pri" type="submit">Guardar evento</button></div></form>`;
 }
-ACT["new-event"] = () => openModal(eventForm());
+ACT["new-event"] = (el) => openModal(eventForm(null, el && el.dataset && el.dataset.date));
 ACT["edit-event"] = (el) => openModal(eventForm(get("events", el.dataset.id)));
 ACT["open-event"] = (el) => go("eventDetail", { eventId: el.dataset.id, eventTab: "resumen" });
 const SUBMIT = {};
@@ -1045,6 +1166,8 @@ SUBMIT["ev-form"] = async (form) => {
   const d = readForm(form); const id = form.dataset.id;
   if (!d.name) return formErr(form, "Escribe el nombre del evento.");
   if (d.end < d.start) return formErr(form, "La fecha de finalización no puede ser anterior al inicio.");
+  if (d.timeEnd && !d.time) return formErr(form, "Indica también la hora de inicio.");
+  if (d.time && d.timeEnd && d.end === d.start && d.timeEnd <= d.time) return formErr(form, "La hora de fin debe ser posterior a la de inicio.");
   if (all("events").some((x) => x.code === d.code && x.id !== id)) return formErr(form, "Ese código ya existe. Usa otro.");
   const bud = d.budgetC ? F.toCents(d.budgetC) : null; if (bud !== null && !(bud >= 0)) return formErr(form, "Escribe un presupuesto válido.");
   d.budgetC = bud;
@@ -1052,7 +1175,8 @@ SUBMIT["ev-form"] = async (form) => {
   const ev = { ...(prev || { id: uid(), budget: cfg().categories.slice(0, 0), createdAt: new Date().toISOString() }), ...d };
   if (prev && prev.status === "cancelado") ev.status = "cancelado";
   addLog(ev, prev ? "Datos del evento actualizados" : "Evento creado");
-  await save("events", ev); closeModal(); toast("Evento guardado."); if (!prev) go("eventDetail", { eventId: ev.id, eventTab: "resumen" });
+  await save("events", ev); closeModal();
+  const cl = ev.status !== "cancelado" ? evClashes(ev) : []; toast(cl.length ? `Evento guardado. Ojo: se cruza en horario con ${cl.map((o) => o.name).join(", ")}.` : "Evento guardado."); if (!prev) go("eventDetail", { eventId: ev.id, eventTab: "resumen" });
 };
 ACT["dup-event"] = (el) => {
   const o = get("events", el.dataset.id);
@@ -1081,7 +1205,7 @@ VIEWS.eventDetail = () => {
   const e = S.events[ui.eventId]; if (!e) return `<div class="card empty"><b>Evento no encontrado</b><button class="btn" data-act="nav" data-v="events">Volver a eventos</button></div>`;
   const f = evFacts(e);
   const head = `<div><button class="btn ghost sm" data-act="nav" data-v="events">← Eventos</button></div>
-    <div class="topline"><div><p>${esc(e.code)} · ${fmtDate(e.start)}${e.end !== e.start ? " – " + fmtDate(e.end) : ""}${e.kind ? " · " + esc(e.kind) : ""}</p><h1>${esc(e.name)}</h1></div>
+    <div class="topline"><div><p>${esc(e.code)} · ${fmtDate(e.start)}${e.end !== e.start ? " – " + fmtDate(e.end) : ""}${e.time ? " · " + esc(evHours(e)) : ""}${e.kind ? " · " + esc(e.kind) : ""}</p><h1>${esc(e.name)}</h1></div>
     <div class="bar">${evStatusPill(e.status)}<button class="btn sm" data-act="edit-event" data-id="${e.id}">Editar</button><button class="btn sm" data-act="dup-event" data-id="${e.id}">Duplicar estructura</button>
     ${e.status !== "cancelado" ? `<button class="btn sm danger" data-act="cancel-event" data-id="${e.id}">Cancelar evento</button>` : ""}</div></div>
     ${e.status === "cancelado" ? `<div class="banner err">Evento cancelado: ${esc(e.cancelReason || "")}. Sus registros financieros se conservan.</div>` : ""}
